@@ -14,9 +14,9 @@ import (
 
 type employee struct {
 	Name        string
-	Birthday    string
-	StartTime   string
-	EndTime     string
+	Birthday    time.Time
+	StartTime   time.Time
+	EndTime     time.Time
 	Job         string
 	PhoneNumber string
 	Weekend     string
@@ -89,10 +89,35 @@ func main() {
 		for j, name := range headers {
 			field := metaValue.FieldByName(name)
 			if field.IsValid() && field.CanSet() {
-				field.SetString(row[j])
+				switch name {
+				case "Birthday":
+					layout := "01-02-06"
+					res, err := time.Parse(layout, row[j])
+					if err != nil {
+						log.Fatalf("Error parsing Birthday: %v", err)
+					}
+					field.Set(reflect.ValueOf(res))
+
+				case "StartTime", "EndTime":
+					floatTime, err := strconv.ParseFloat(row[j], 64)
+					if err != nil {
+						log.Fatalf("Error parsing float string: %v", err)
+					}
+					timeClock, err := excelize.ExcelDateToTime(floatTime, false)
+					if err != nil {
+						log.Fatalf("Error converting float to clock: %v", err)
+					}
+					field.Set(reflect.ValueOf(timeClock))
+				default:
+					field.SetString(row[j])
+				}
 			} else {
 				log.Printf("Error: Field %s not exist in struct", name)
 			}
+		}
+		if e.StartTime.Hour() > e.EndTime.Hour() {
+			newDate := e.EndTime.AddDate(0, 0, 1)
+			metaValue.FieldByName("EndTime").Set(reflect.ValueOf(newDate))
 		}
 		employees = append(employees, *e)
 		log.Printf("Added %v to collection %v", e.Name, e)
@@ -136,45 +161,44 @@ func main() {
 	//Set rows with employees
 	i := 7
 	for _, e := range employees {
-		employeeWorkTime := []string{e.Job, e.Name}
-		employeeTotalHoursRow := []any{}
-		totalHours := 0
-		employeeWeekend := toInt(strings.Split(e.Weekend, ""))
+		worktimeRow := []string{e.Job, e.Name}
+		totalHoursRow := []any{}
+		//totalHours := time.Date(2006, time.January, 2, 0, 0, 0, 0, time.UTC)
+		var totalHours time.Duration
+		weekend := toInt(strings.Split(e.Weekend, ""))
 		for _, v := range weekDaysMap {
 			switch v {
-			case employeeWeekend[0], employeeWeekend[1]:
-				employeeWorkTime = append(employeeWorkTime, "B") // Pay attention to language
+			case weekend[0], weekend[1]:
+				worktimeRow = append(worktimeRow, "B") // Pay attention to language
 			default:
-				employeeWorkTime = append(employeeWorkTime, fmt.Sprintf("%v-%v", e.StartTime, e.EndTime))
+				start := e.StartTime.Format("15:04:05")
+				end := e.EndTime.Format("15:04:05")
+				worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start[0:5], end[0:5]))
 			}
 		}
-		for _, v := range employeeWorkTime[2:] {
+		for _, v := range worktimeRow[2:] {
 			switch v {
 			case "B":
-				employeeTotalHoursRow = append(employeeTotalHoursRow, "в")
+				totalHoursRow = append(totalHoursRow, "в")
 			default:
-				st, _ := strconv.Atoi(strings.ReplaceAll(e.StartTime, ":00", ""))
-				et, _ := strconv.Atoi(strings.ReplaceAll(e.EndTime, ":00", ""))
-
-				if et > st {
-					employeeTotalHoursRow = append(employeeTotalHoursRow, et-st)
-					totalHours += et - st
-				} else {
-					employeeTotalHoursRow = append(employeeTotalHoursRow, st-et)
-					totalHours += st - et
-				}
-
+				workDuration := e.EndTime.Sub(e.StartTime)
+				totalHoursRow = append(totalHoursRow, workDuration.Hours())
+				totalHours += workDuration
 			}
 
 		}
-		employeeTotalHoursRow = append(employeeTotalHoursRow, "", totalHours)
-		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &employeeWorkTime); err != nil {
-			log.Println("Sheet error employeeWorkTime", err)
+		totalHoursRow = append(totalHoursRow, "", totalHours.String())
+		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &worktimeRow); err != nil {
+			log.Println("Sheet error worktimeRow", err)
 		}
-		f.MergeCell(sheetName, fmt.Sprintf("A%v", i), fmt.Sprintf("A%v", i+1))
-		f.MergeCell(sheetName, fmt.Sprintf("B%v", i), fmt.Sprintf("B%v", i+1))
-		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", i+1), &employeeTotalHoursRow); err != nil {
-			log.Println("Sheet error employeeTotalHoursRow", err)
+		if err := f.MergeCell(sheetName, fmt.Sprintf("A%v", i), fmt.Sprintf("A%v", i+1)); err != nil {
+			log.Panic(err)
+		}
+		if err := f.MergeCell(sheetName, fmt.Sprintf("B%v", i), fmt.Sprintf("B%v", i+1)); err != nil {
+			log.Panic(err)
+		}
+		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", i+1), &totalHoursRow); err != nil {
+			log.Println("Sheet error totalHoursRow", err)
 		}
 
 		i += 2
