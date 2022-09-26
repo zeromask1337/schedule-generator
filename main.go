@@ -171,9 +171,9 @@ func main() {
 			case weekend[0], weekend[1]:
 				worktimeRow = append(worktimeRow, "B") // Pay attention to language
 			default:
-				start := e.StartTime.Format("15:04:05")
-				end := e.EndTime.Format("15:04:05")
-				worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start[0:5], end[0:5]))
+				start := e.StartTime.Format("15:04")
+				end := e.EndTime.Format("15:04")
+				worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start, end))
 			}
 		}
 		for _, v := range worktimeRow[2:] {
