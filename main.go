@@ -163,19 +163,25 @@ func main() {
 	for _, e := range employees {
 		worktimeRow := []string{e.Job, e.Name}
 		totalHoursRow := []any{}
-		//totalHours := time.Date(2006, time.January, 2, 0, 0, 0, 0, time.UTC)
 		var totalHours time.Duration
 		weekend := toInt(strings.Split(e.Weekend, ""))
-		for _, v := range weekDaysMap {
-			switch v {
-			case weekend[0], weekend[1]:
+
+		for l := 1; l < len(weekDaysMap)+1; l++ {
+			isWeekend := false
+			for _, v := range weekend {
+				if weekDaysMap[l] == v {
+					isWeekend = true
+				}
+			}
+			if isWeekend == true {
 				worktimeRow = append(worktimeRow, "B") // Pay attention to language
-			default:
+			} else {
 				start := e.StartTime.Format("15:04")
 				end := e.EndTime.Format("15:04")
 				worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start, end))
 			}
 		}
+
 		for _, v := range worktimeRow[2:] {
 			switch v {
 			case "B":
