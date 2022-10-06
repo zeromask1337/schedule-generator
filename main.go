@@ -101,11 +101,11 @@ func main() {
 				case "StartTime", "EndTime":
 					floatTime, err := strconv.ParseFloat(row[j], 64)
 					if err != nil {
-						log.Fatalf("Error parsing float string: %v", err)
+						log.Fatalf("Error parsing float string of %v: %v", e.Name, err)
 					}
 					timeClock, err := excelize.ExcelDateToTime(floatTime, false)
 					if err != nil {
-						log.Fatalf("Error converting float to clock: %v", err)
+						log.Fatalf("Error converting float to clock of %v: %v", e.Name, err)
 					}
 					field.Set(reflect.ValueOf(timeClock))
 				default:
@@ -135,7 +135,7 @@ func main() {
 		monthDays    []int
 		monthRow     = []any{"", "ФИО/Дата"}
 	)
-	log.Printf("Created sheet %v:%v\n", sheetIndex, sheetName)
+	log.Printf("Created sheet %v: %v\n", sheetIndex, sheetName)
 
 	// Set row with calendar days
 	for i := 1; i <= daysInMonth; i++ {
@@ -149,7 +149,7 @@ func main() {
 	for _, v := range monthDays {
 		monthRow = append(monthRow, v)
 	}
-	monthRow = append(monthRow, "норма часов, согласно производственному календарю", "отработано в месяц (часов)", "подпись работника")
+	monthRow = append(monthRow, "Норма часов, согласно производственному календарю", "Отработано в месяц (часов)", "Подпись работника")
 
 	if err := f.SetSheetRow(sheetName, "A5", &monthRow); err != nil {
 		log.Println("Sheet error C5", err)
