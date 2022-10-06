@@ -94,7 +94,7 @@ func main() {
 					layout := "01-02-06"
 					res, err := time.Parse(layout, row[j])
 					if err != nil {
-						log.Fatalf("Error parsing Birthday: %v", err)
+						log.Fatalf("Error parsing Birthday of %v: %v", e.Name, err)
 					}
 					field.Set(reflect.ValueOf(res))
 
