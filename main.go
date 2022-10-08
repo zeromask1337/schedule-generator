@@ -22,8 +22,8 @@ type employee struct {
 	Weekend     string
 }
 
-// Keys returns map keys
-func Keys(m map[int]int) (keys []int) {
+// getKeys returns map keys
+func getKeys(m map[int]int) (keys []int) {
 	for k := range m {
 		keys = append(keys, k)
 	}
