@@ -53,6 +53,13 @@ func main() {
 	year, month, _ := nextMonth.Date()
 	daysInMonth := daysIn(month, year)
 	daysOfWeek := [7]string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
+
+	// Check if args are empty
+	if len(os.Args) > 1 {
+		log.Printf("[INFO] File path: %v", os.Args[1])
+	} else {
+		log.Panicln("[ERROR] no file path argument")
+	}
 	filePath := os.Args[1]
 
 	f, err := excelize.OpenFile(filePath)
