@@ -150,7 +150,7 @@ func main() {
 		weekDaysMap[i] = wdi
 		weekDaySlice = append(weekDaySlice, daysOfWeek[weekDaysMap[i]])
 	}
-	monthDays = Keys(weekDaysMap)
+	monthDays = getKeys(weekDaysMap)
 	sort.Ints(monthDays)
 
 	for _, v := range monthDays {
