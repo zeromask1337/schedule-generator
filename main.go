@@ -84,23 +84,32 @@ func main() {
 	}
 	filePath := os.Args[1]
 
+	/*
+		SCAN EMPLOYEE DATABASE SHEET
+	*/
+
+	// Open target file
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		ErrorLogger.Fatal("Can't open excel file. ", err)
 	}
+
 	defer func() {
 		if err := f.Save(); err != nil {
 			ErrorLogger.Fatal("Can't save file. ", err)
 		}
 	}()
 
-	// Get all the rows in the Sheet1.
+	// Get all the rows in the database.
 	rows, err := f.GetRows("Сотрудники")
 	if err != nil {
 		ErrorLogger.Fatal("Can't get sheet contents. ", err)
 	}
 
-	// Create employees collection
+	/*
+		CREATE EMPLOYEES COLLECTION
+	*/
+
 	var (
 		employees []employee
 		headers   = rows[0]
@@ -152,9 +161,9 @@ func main() {
 	}
 
 	/*
-		Fill spreadsheet.
-		Here we fill spredsheet with calendar days, employees and schedule.
+		FILL SPREADSHEET WITH CALENDAR DAYS, EMPLOYEES AND SCHEDULE
 	*/
+
 	var (
 		sheetName    string = fmt.Sprintf("%v %v", month, year)
 		sheetIndex          = f.NewSheet(sheetName)
@@ -186,7 +195,10 @@ func main() {
 		ErrorLogger.Fatal("Sheet error A6. ", err)
 	}
 
-	//Set rows with employees
+	/*
+		SET ROWS WITH EMPLOYEES
+	*/
+
 	i := 7
 	for _, e := range employees {
 		worktimeRow := []string{e.Job, e.Name}
