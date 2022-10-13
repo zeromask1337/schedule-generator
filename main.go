@@ -48,9 +48,14 @@ func toInt(s []string) (slice []int) {
 	return slice
 }
 
+// buildDate returns Time type using only year, month and day
+func buildDate(year int, month time.Month, day int) time.Time {
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
 // daysIn returns number of days in specified month
 func daysIn(m time.Month, year int) int {
-	return time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	return buildDate(year, m+1, 0).Day()
 }
 
 func init() {
@@ -66,7 +71,7 @@ func init() {
 
 func main() {
 	desiredTime := time.Now().AddDate(0, 1, 0)
-	nextMonth := time.Date(desiredTime.Year(), desiredTime.Month(), 1, 0, 0, 0, 0, time.UTC)
+	nextMonth := buildDate(desiredTime.Year(), desiredTime.Month(), 1)
 	year, month, _ := nextMonth.Date()
 	daysInMonth := daysIn(month, year)
 	daysOfWeek := [7]string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
@@ -162,7 +167,7 @@ func main() {
 
 	// Set row with calendar days
 	for i := 1; i <= daysInMonth; i++ {
-		wdi := int(time.Date(desiredTime.Year(), desiredTime.Month(), i, 0, 0, 0, 0, time.UTC).Weekday())
+		wdi := int(buildDate(desiredTime.Year(), desiredTime.Month(), i).Weekday())
 		weekDaysMap[i] = wdi
 		weekDaySlice = append(weekDaySlice, daysOfWeek[weekDaysMap[i]])
 	}
