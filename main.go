@@ -12,6 +12,12 @@ import (
 	"time"
 )
 
+var (
+	InfoLogger    *log.Logger
+	WarningLogger *log.Logger
+	ErrorLogger   *log.Logger
+)
+
 type employee struct {
 	Name        string
 	Birthday    time.Time
@@ -47,6 +53,17 @@ func daysIn(m time.Month, year int) int {
 	return time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
+func init() {
+	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Panic("Error writing logs file")
+	}
+	InfoLogger = log.New(file, "[INFO] ", log.LstdFlags)
+	WarningLogger = log.New(file, "[WARNING] ", log.LstdFlags)
+	ErrorLogger = log.New(file, "[ERROR] ", log.LstdFlags)
+	//log.SetOutput(file)
+}
+
 func main() {
 	desiredTime := time.Now().AddDate(0, 1, 0)
 	nextMonth := time.Date(desiredTime.Year(), desiredTime.Month(), 1, 0, 0, 0, 0, time.UTC)
@@ -56,27 +73,26 @@ func main() {
 
 	// Check if args are empty
 	if len(os.Args) > 1 {
-		log.Printf("[INFO] File path: %v", os.Args[1])
+		InfoLogger.Printf("File path: %v", os.Args[1])
 	} else {
-		log.Panicln("[ERROR] no file path argument")
+		ErrorLogger.Fatal("No file path argument")
 	}
 	filePath := os.Args[1]
 
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
-		fmt.Println(err)
-		return
+		ErrorLogger.Fatal("Can't open excel file. ", err)
 	}
 	defer func() {
 		if err := f.Save(); err != nil {
-			fmt.Println(err)
+			ErrorLogger.Fatal("Can't save file. ", err)
 		}
 	}()
 
 	// Get all the rows in the Sheet1.
 	rows, err := f.GetRows("Сотрудники")
 	if err != nil {
-		log.Panicln(err)
+		ErrorLogger.Fatal("Can't get sheet contents. ", err)
 	}
 
 	// Create employees collection
@@ -101,25 +117,25 @@ func main() {
 					layout := "01-02-06"
 					res, err := time.Parse(layout, row[j])
 					if err != nil {
-						log.Fatalf("Error parsing Birthday of %v: %v", e.Name, err)
+						ErrorLogger.Fatalf("Error parsing Birthday of %v: %v", e.Name, err)
 					}
 					field.Set(reflect.ValueOf(res))
 
 				case "StartTime", "EndTime":
 					floatTime, err := strconv.ParseFloat(row[j], 64)
 					if err != nil {
-						log.Fatalf("Error parsing float string of %v: %v", e.Name, err)
+						ErrorLogger.Fatalf("Error parsing float string of %v: %v", e.Name, err)
 					}
 					timeClock, err := excelize.ExcelDateToTime(floatTime, false)
 					if err != nil {
-						log.Fatalf("Error converting float to clock of %v: %v", e.Name, err)
+						ErrorLogger.Fatalf("Error converting float to clock of %v: %v", e.Name, err)
 					}
 					field.Set(reflect.ValueOf(timeClock))
 				default:
 					field.SetString(row[j])
 				}
 			} else {
-				log.Printf("Error: Field %s not exist in struct", name)
+				WarningLogger.Println("Field %s does not exist in struct", name)
 			}
 		}
 		if e.StartTime.Hour() > e.EndTime.Hour() {
@@ -127,7 +143,7 @@ func main() {
 			metaValue.FieldByName("EndTime").Set(reflect.ValueOf(newDate))
 		}
 		employees = append(employees, *e)
-		log.Printf("Added %v to collection %v", e.Name, e)
+		InfoLogger.Printf("Added %v to collection %+v", e.Name, e)
 	}
 
 	/*
@@ -142,7 +158,7 @@ func main() {
 		monthDays    []int
 		monthRow     = []any{"", "ФИО/Дата"}
 	)
-	log.Printf("Created sheet %v: %v\n", sheetIndex, sheetName)
+	InfoLogger.Printf("Created sheet %v: %v\n", sheetIndex, sheetName)
 
 	// Set row with calendar days
 	for i := 1; i <= daysInMonth; i++ {
@@ -159,10 +175,10 @@ func main() {
 	monthRow = append(monthRow, "Норма часов, согласно производственному календарю", "Отработано в месяц (часов)", "Подпись работника")
 
 	if err := f.SetSheetRow(sheetName, "A5", &monthRow); err != nil {
-		log.Println("Sheet error C5", err)
+		ErrorLogger.Fatal("Sheet error A5. ", err) // TODO refactor cell methods
 	}
 	if err := f.SetSheetRow(sheetName, "A6", &weekDaySlice); err != nil {
-		log.Println("Sheet error C6", err)
+		ErrorLogger.Fatal("Sheet error A6. ", err)
 	}
 
 	//Set rows with employees
@@ -202,16 +218,16 @@ func main() {
 		}
 		totalHoursRow = append(totalHoursRow, "", totalHours.String())
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &worktimeRow); err != nil {
-			log.Println("Sheet error worktimeRow", err)
+			ErrorLogger.Fatal("Error inserting worktimeRow on A. ", err)
 		}
 		if err := f.MergeCell(sheetName, fmt.Sprintf("A%v", i), fmt.Sprintf("A%v", i+1)); err != nil {
-			log.Panic(err)
+			ErrorLogger.Fatal("Error when merging cell A. ", err)
 		}
 		if err := f.MergeCell(sheetName, fmt.Sprintf("B%v", i), fmt.Sprintf("B%v", i+1)); err != nil {
-			log.Panic(err)
+			ErrorLogger.Fatal("Error when merging cell B. ", err)
 		}
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", i+1), &totalHoursRow); err != nil {
-			log.Println("Sheet error totalHoursRow", err)
+			ErrorLogger.Fatal("Error inserting totalhoursRow on C", err)
 		}
 
 		i += 2
