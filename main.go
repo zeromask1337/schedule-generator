@@ -218,24 +218,29 @@ func main() {
 		weekend := toInt(strings.Split(e.Weekend, ""))
 
 		for l := 1; l < len(weekDaysMap)+1; l++ {
-			isWeekend := false
-			for _, v := range weekend {
-				if weekDaysMap[l] == v {
-					isWeekend = true
-				}
-			}
-			if isWeekend == true {
-				worktimeRow = append(worktimeRow, "B") // Pay attention to language
+			currentDay := buildDate(year, month, l)
+			if e.Birthday.Month() == currentDay.Month() && e.Birthday.Day() == currentDay.Day() {
+				worktimeRow = append(worktimeRow, "ДР")
 			} else {
-				start := e.StartTime.Format("15:04")
-				end := e.EndTime.Format("15:04")
-				worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start, end))
+				isWeekend := false
+				for _, v := range weekend {
+					if weekDaysMap[l] == v {
+						isWeekend = true
+					}
+				}
+				if isWeekend == true {
+					worktimeRow = append(worktimeRow, "B") // Pay attention to language
+				} else {
+					start := e.StartTime.Format("15:04")
+					end := e.EndTime.Format("15:04")
+					worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start, end))
+				}
 			}
 		}
 
 		for _, v := range worktimeRow[2:] {
 			switch v {
-			case "B":
+			case "B", "ДР":
 				totalHoursRow = append(totalHoursRow, "в")
 			default:
 				workDuration := e.EndTime.Sub(e.StartTime)
@@ -244,6 +249,7 @@ func main() {
 			}
 
 		}
+
 		totalHoursRow = append(totalHoursRow, "", totalHours.String())
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &worktimeRow); err != nil {
 			ErrorLogger.Fatal("Error inserting worktimeRow on A. ", err)
