@@ -167,10 +167,10 @@ func main() {
 	var (
 		sheetName    string = fmt.Sprintf("%v %v", month, year)
 		sheetIndex          = f.NewSheet(sheetName)
-		weekDaySlice        = []string{"", ""}
-		weekDaysMap         = map[int]int{}
+		weekDaySlice []string
+		weekDaysMap  = map[int]int{}
 		monthDays    []int
-		monthRow     = []any{"", "ФИО/Дата"}
+		monthRow     = []any{"ФИО/Дата"}
 	)
 	InfoLogger.Printf("Created sheet %v: %v\n", sheetIndex, sheetName)
 
@@ -188,11 +188,22 @@ func main() {
 	}
 	monthRow = append(monthRow, "Норма часов, согласно производственному календарю", "Отработано в месяц (часов)", "Подпись работника")
 
-	if err := f.SetSheetRow(sheetName, "A5", &monthRow); err != nil {
-		ErrorLogger.Fatal("Sheet error A5. ", err) // TODO refactor cell methods
+	// Inserting calendar row
+	cellMR, err := excelize.CoordinatesToCellName(2, 5) // TODO: Maybe refactor into method ?
+	if err != nil {
+		ErrorLogger.Fatal("Creating cell from coordinates failed")
 	}
-	if err := f.SetSheetRow(sheetName, "A6", &weekDaySlice); err != nil {
-		ErrorLogger.Fatal("Sheet error A6. ", err)
+	if err := f.SetSheetRow(sheetName, cellMR, &monthRow); err != nil {
+		ErrorLogger.Fatalf("Setting sheet row %v failed", cellMR, err)
+	}
+
+	// Inserting week day row
+	cellWDS, err := excelize.CoordinatesToCellName(3, 6)
+	if err != nil {
+		ErrorLogger.Fatal("Creating cell from coordinates failed")
+	}
+	if err := f.SetSheetRow(sheetName, cellWDS, &weekDaySlice); err != nil {
+		ErrorLogger.Fatal("Setting sheet row %v failed", cellWDS, err)
 	}
 
 	/*
