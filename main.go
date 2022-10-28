@@ -177,8 +177,8 @@ func main() {
 	*/
 
 	var (
-		sheetName    string = fmt.Sprintf("%v %v", month, year)
-		sheetIndex          = f.NewSheet(sheetName)
+		sheetName    = fmt.Sprintf("%v %v", month, year)
+		sheetIndex   = f.NewSheet(sheetName)
 		weekDaySlice []string
 		weekDaysMap  = map[int]int{}
 		monthDays    []int
