@@ -5,6 +5,7 @@ import (
 	"github.com/xuri/excelize/v2"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strconv"
@@ -59,14 +60,32 @@ func daysIn(m time.Month, year int) int {
 }
 
 func init() {
-	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	// Check if args are empty
+	if len(os.Args) > 1 {
+		fmt.Printf("FILEPATH: %v\n", os.Args[1])
+	} else {
+		log.Fatal("Error: no file path argument.\n")
+	}
+
+	now := time.Now()
+	hour, min, sec := now.Clock()
+	year, month, day := now.Date()
+	dir := filepath.Dir(os.Args[1])
+	filename := fmt.Sprintf("log-%v-%v-%v_%v:%v:%v.txt", year, month, day, hour, min, sec)
+	// Create logs directory
+	if err := os.Mkdir(filepath.Join(dir, "logs"), os.ModePerm); err != nil {
+		log.Println(err)
+	}
+	// Write logs file
+	file, err := os.OpenFile(
+		filepath.Join(dir, "logs", filename),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		log.Panic("Error writing logs file")
+		log.Panic("Error writing logs file.\n", err)
 	}
 	InfoLogger = log.New(file, "[INFO] ", log.LstdFlags)
 	WarningLogger = log.New(file, "[WARNING] ", log.LstdFlags)
 	ErrorLogger = log.New(file, "[ERROR] ", log.LstdFlags)
-	//log.SetOutput(file)
 }
 
 func main() {
@@ -75,13 +94,6 @@ func main() {
 	year, month, _ := nextMonth.Date()
 	daysInMonth := daysIn(month, year)
 	daysOfWeek := [7]string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
-
-	// Check if args are empty
-	if len(os.Args) > 1 {
-		InfoLogger.Printf("File path: %v", os.Args[1])
-	} else {
-		ErrorLogger.Fatal("No file path argument")
-	}
 	filePath := os.Args[1]
 
 	/*
