@@ -261,14 +261,14 @@ func main() {
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &worktimeRow); err != nil {
 			ErrorLogger.Fatal("Inserting worktimeRow on A failed. ", err)
 		}
+		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", i+1), &totalHoursRow); err != nil {
+			ErrorLogger.Fatal("Inserting totalhoursRow on C failed. ", err)
+		}
 		if err := f.MergeCell(sheetName, fmt.Sprintf("A%v", i), fmt.Sprintf("A%v", i+1)); err != nil {
 			ErrorLogger.Fatal("Merging cell A failed. ", err)
 		}
 		if err := f.MergeCell(sheetName, fmt.Sprintf("B%v", i), fmt.Sprintf("B%v", i+1)); err != nil {
 			ErrorLogger.Fatal("Merging cell B failed. ", err)
-		}
-		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", i+1), &totalHoursRow); err != nil {
-			ErrorLogger.Fatal("Inserting totalhoursRow on C failed. ", err)
 		}
 
 		i += 2
