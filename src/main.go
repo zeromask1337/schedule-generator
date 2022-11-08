@@ -273,4 +273,6 @@ func main() {
 
 		i += 2
 	}
+
+	applyStyles(f, sheetName)
 }
