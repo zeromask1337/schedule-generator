@@ -94,13 +94,13 @@ func main() {
 	year, month, _ := nextMonth.Date()
 	daysInMonth := daysIn(month, year)
 	daysOfWeek := [7]string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
-	filePath := os.Args[1]
 
 	/*
 		SCAN EMPLOYEE DATABASE SHEET
 	*/
 
-	// Open target file
+	// Import file
+	filePath := os.Args[1]
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		ErrorLogger.Fatal("Can't open excel file. ", err)
