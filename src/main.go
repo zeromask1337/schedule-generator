@@ -233,6 +233,9 @@ func main() {
 			currentDay := buildDate(year, month, l)
 			if e.Birthday.Month() == currentDay.Month() && e.Birthday.Day() == currentDay.Day() {
 				worktimeRow = append(worktimeRow, "ДР")
+				workDuration := e.EndTime.Sub(e.StartTime)
+				totalHoursRow = append(totalHoursRow, workDuration.Hours()) // TODO: ask
+				totalHours += workDuration
 			} else {
 				isWeekend := false
 				for _, v := range weekend {
@@ -242,24 +245,16 @@ func main() {
 				}
 				if isWeekend == true {
 					worktimeRow = append(worktimeRow, "B") // Pay attention to language
+					totalHoursRow = append(totalHoursRow, "в")
 				} else {
 					start := e.StartTime.Format("15:04")
 					end := e.EndTime.Format("15:04")
 					worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start, end))
+					workDuration := e.EndTime.Sub(e.StartTime)
+					totalHoursRow = append(totalHoursRow, workDuration.Hours())
+					totalHours += workDuration
 				}
 			}
-		}
-
-		for _, v := range worktimeRow[2:] {
-			switch v {
-			case "B", "ДР":
-				totalHoursRow = append(totalHoursRow, "в")
-			default:
-				workDuration := e.EndTime.Sub(e.StartTime)
-				totalHoursRow = append(totalHoursRow, workDuration.Hours())
-				totalHours += workDuration
-			}
-
 		}
 
 		totalHoursRow = append(totalHoursRow, "", totalHours.String())
