@@ -221,6 +221,7 @@ func main() {
 	/*
 		SET ROWS WITH EMPLOYEES
 	*/
+	applyGeneralStyles(f, sheetName, daysInMonth, employees)
 
 	i := 7
 	for _, e := range employees {
@@ -231,6 +232,19 @@ func main() {
 
 		for l := 1; l < len(weekDaysMap)+1; l++ {
 			currentDay := buildDate(year, month, l)
+			wd := int(currentDay.Weekday())
+			if wd == 6 || wd == 0 {
+				st, err := excelize.CoordinatesToCellName(l+2, 5)
+				if err != nil {
+					ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
+				}
+				ec, err := excelize.CoordinatesToCellName(l+2, 6+len(employees)*2)
+				if err != nil {
+					ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
+				}
+
+				paintWeekend(f, sheetName, st, ec)
+			}
 			if e.Birthday.Month() == currentDay.Month() && e.Birthday.Day() == currentDay.Day() {
 				worktimeRow = append(worktimeRow, "ДР")
 				workDuration := e.EndTime.Sub(e.StartTime)
@@ -270,9 +284,6 @@ func main() {
 		if err := f.MergeCell(sheetName, fmt.Sprintf("B%v", i), fmt.Sprintf("B%v", i+1)); err != nil {
 			ErrorLogger.Fatal("Merging cell B failed. ", err)
 		}
-
 		i += 2
 	}
-
-	applyStyles(f, sheetName)
 }
