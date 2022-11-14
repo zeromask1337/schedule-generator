@@ -58,8 +58,8 @@ func applyGeneralStyles(f *excelize.File, sheetName string, dim int, employees [
 	}
 }
 
-func paintWeekend(f *excelize.File, sheetName string, startCell, endCell string) {
-	style, err := f.NewStyle(&excelize.Style{
+func paintWeekend(file *excelize.File, sheetName string, startCell, endCell string) {
+	style, err := file.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{
 			Horizontal: "center",
 			Vertical:   "center",
@@ -96,7 +96,7 @@ func paintWeekend(f *excelize.File, sheetName string, startCell, endCell string)
 		ErrorLogger.Println("Failed to create new style.2\n", err)
 	}
 
-	if err := f.SetCellStyle(sheetName, startCell, endCell, style); err != nil {
+	if err := file.SetCellStyle(sheetName, startCell, endCell, style); err != nil {
 		WarningLogger.Println("Failed to apply color weekend.\n", err)
 	}
 }
