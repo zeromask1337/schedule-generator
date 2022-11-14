@@ -231,6 +231,7 @@ func main() {
 	applyGeneralStyles(f, sheetName, daysInMonth, employees)
 
 	i := 7
+	cursor := 7
 	for _, e := range employees {
 		worktimeRow := []string{e.Job, e.Name}
 		totalHoursRow := []any{}
@@ -280,18 +281,18 @@ func main() {
 
 		// Inserting and merging rows
 		totalHoursRow = append(totalHoursRow, "", totalHours.String())
-		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &worktimeRow); err != nil {
+		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", cursor), &worktimeRow); err != nil {
 			ErrorLogger.Fatal("Inserting worktimeRow on A failed. ", err)
 		}
-		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", i+1), &totalHoursRow); err != nil {
+		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", cursor+1), &totalHoursRow); err != nil {
 			ErrorLogger.Fatal("Inserting totalhoursRow on C failed. ", err)
 		}
-		if err := f.MergeCell(sheetName, fmt.Sprintf("A%v", i), fmt.Sprintf("A%v", i+1)); err != nil {
+		if err := f.MergeCell(sheetName, fmt.Sprintf("A%v", cursor), fmt.Sprintf("A%v", cursor+1)); err != nil {
 			ErrorLogger.Fatal("Merging cell A failed. ", err)
 		}
-		if err := f.MergeCell(sheetName, fmt.Sprintf("B%v", i), fmt.Sprintf("B%v", i+1)); err != nil {
+		if err := f.MergeCell(sheetName, fmt.Sprintf("B%v", cursor), fmt.Sprintf("B%v", cursor+1)); err != nil {
 			ErrorLogger.Fatal("Merging cell B failed. ", err)
 		}
-		i += 2
+		cursor += 2
 	}
 }
