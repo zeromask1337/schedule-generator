@@ -76,6 +76,7 @@ func init() {
 	if err := os.Mkdir(filepath.Join(dir, "logs"), os.ModePerm); err != nil {
 		log.Println(err)
 	}
+
 	// Write logs file
 	file, err := os.OpenFile(
 		filepath.Join(dir, "logs", filename),
@@ -195,12 +196,18 @@ func main() {
 	monthDays = getKeys(weekDaysMap)
 	sort.Ints(monthDays)
 
+	// Append month days checkout column headers
 	for _, v := range monthDays {
 		monthRow = append(monthRow, v)
 	}
-	monthRow = append(monthRow, "Норма часов, согласно производственному календарю", "Отработано в месяц (часов)", "Подпись работника")
+	monthRow = append(
+		monthRow,
+		"Норма часов, согласно производственному календарю",
+		"Отработано в месяц (часов)",
+		"Подпись работника",
+	)
 
-	// Inserting calendar row
+	// Insert calendar row
 	cellMR, err := excelize.CoordinatesToCellName(2, 5) // TODO: Maybe refactor into method ?
 	if err != nil {
 		ErrorLogger.Fatal("Creating cell from coordinates failed")
@@ -209,7 +216,7 @@ func main() {
 		ErrorLogger.Fatalf("Setting sheet row %v failed", cellMR, err)
 	}
 
-	// Inserting week day row
+	// Insert week day row
 	cellWDS, err := excelize.CoordinatesToCellName(3, 6)
 	if err != nil {
 		ErrorLogger.Fatal("Creating cell from coordinates failed")
@@ -271,6 +278,7 @@ func main() {
 			}
 		}
 
+		// Inserting and merging rows
 		totalHoursRow = append(totalHoursRow, "", totalHours.String())
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", i), &worktimeRow); err != nil {
 			ErrorLogger.Fatal("Inserting worktimeRow on A failed. ", err)
