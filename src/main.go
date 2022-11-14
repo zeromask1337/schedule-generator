@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/xuri/excelize/v2"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -57,6 +58,19 @@ func buildDate(year int, month time.Month, day int) time.Time {
 // daysIn returns number of days in specified month
 func daysIn(m time.Month, year int) int {
 	return buildDate(year, m+1, 0).Day()
+}
+
+// buildCoordinates returns x and y of input coordinates
+func buildCoordinates(collX int, rowX int, colY int, rowY int) (startCell string, endCell string) {
+	st, err := excelize.CoordinatesToCellName(collX, rowX)
+	if err != nil {
+		ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
+	}
+	ec, err := excelize.CoordinatesToCellName(colY, rowY)
+	if err != nil {
+		ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
+	}
+	return st, ec
 }
 
 func init() {
@@ -230,52 +244,66 @@ func main() {
 	*/
 	applyGeneralStyles(f, sheetName, daysInMonth, employees)
 
-	i := 7
+	//Fetch weekends and holidays from isdayoff API
+	res, err := http.Get(fmt.Sprintf("https://isdayoff.ru/api/getdata?year=%v&month=%v&cc=ru&pre=1&covid=0&sd=0", year, int(month)))
+	if err != nil {
+		ErrorLogger.Fatalln("Fetching data from 'isdayoff' API failed.\n", err)
+	} else {
+		InfoLogger.Println("Success fetch from 'isdayoff' API")
+	}
+
+	data, _ := io.ReadAll(res.Body)
+	dataString := string(data)
+
 	cursor := 7
 	for _, e := range employees {
 		worktimeRow := []string{e.Job, e.Name}
 		totalHoursRow := []any{}
 		var totalHours time.Duration
-		weekend := toInt(strings.Split(e.Weekend, ""))
 
-		for l := 1; l < len(weekDaysMap)+1; l++ {
-			currentDay := buildDate(year, month, l)
-			wd := int(currentDay.Weekday())
+		for i, ch := range dataString {
+			date := buildDate(year, month, i+1)
+			wd := int(date.Weekday())
+
 			if wd == 6 || wd == 0 {
-				st, err := excelize.CoordinatesToCellName(l+2, 5)
-				if err != nil {
-					ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
-				}
-				ec, err := excelize.CoordinatesToCellName(l+2, 6+len(employees)*2)
-				if err != nil {
-					ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
-				}
-
+				st, ec := buildCoordinates(i+3, 5, i+3, 6+len(employees)*2)
 				paintWeekend(f, sheetName, st, ec)
 			}
-			if e.Birthday.Month() == currentDay.Month() && e.Birthday.Day() == currentDay.Day() {
-				worktimeRow = append(worktimeRow, "ДР")
-				workDuration := e.EndTime.Sub(e.StartTime)
-				totalHoursRow = append(totalHoursRow, workDuration.Hours()) // TODO: ask
+
+			switch string(ch) {
+			case "0", "4":
+				start := e.StartTime.Format("15:04")
+				end := e.EndTime.Format("15:04")
+				cellValue := fmt.Sprintf("%v-%v", start, end)
+
+				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
+					cellValue += ", ДР" // paint bday
+				}
+				worktimeRow = append(worktimeRow, cellValue)
+				workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
+				totalHoursRow = append(totalHoursRow, workDuration.Hours())
 				totalHours += workDuration
-			} else {
-				isWeekend := false
-				for _, v := range weekend {
-					if weekDaysMap[l] == v {
-						isWeekend = true
-					}
+
+			case "1":
+				cellValue := "B"
+				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
+					cellValue += ", ДР" // paint bday
 				}
-				if isWeekend == true {
-					worktimeRow = append(worktimeRow, "B") // Pay attention to language
-					totalHoursRow = append(totalHoursRow, "в")
-				} else {
-					start := e.StartTime.Format("15:04")
-					end := e.EndTime.Format("15:04")
-					worktimeRow = append(worktimeRow, fmt.Sprintf("%v-%v", start, end))
-					workDuration := e.EndTime.Sub(e.StartTime)
-					totalHoursRow = append(totalHoursRow, workDuration.Hours())
-					totalHours += workDuration
+				worktimeRow = append(worktimeRow, cellValue)
+				totalHoursRow = append(totalHoursRow, "в")
+
+			case "2":
+				start := e.StartTime.Format("15:04")
+				end := e.EndTime.Format("15:04")
+				cellValue := fmt.Sprintf("%v-%v%v", start, end, ", СОКР")
+
+				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
+					cellValue += ", ДР" // paint bday
 				}
+				worktimeRow = append(worktimeRow, cellValue)
+				workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*2 // lunch
+				totalHoursRow = append(totalHoursRow, workDuration.Hours())
+				totalHours += workDuration
 			}
 		}
 
