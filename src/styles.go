@@ -110,7 +110,7 @@ func paintHoliday(file *excelize.File, sheetName string, startCell, endCell stri
 		},
 		Fill: excelize.Fill{
 			Type:    "pattern",
-			Color:   []string{"#CC99FF"},
+			Color:   []string{"#00E1DD"},
 			Pattern: 1},
 		Border: []excelize.Border{
 			{
@@ -153,7 +153,7 @@ func paintHalfDay(file *excelize.File, sheetName string, startCell, endCell stri
 		},
 		Fill: excelize.Fill{
 			Type:    "pattern",
-			Color:   []string{"#FFCC99"},
+			Color:   []string{"#A5EF52"},
 			Pattern: 1},
 		Border: []excelize.Border{
 			{
@@ -184,5 +184,48 @@ func paintHalfDay(file *excelize.File, sheetName string, startCell, endCell stri
 
 	if err := file.SetCellStyle(sheetName, startCell, endCell, style); err != nil {
 		WarningLogger.Println("Failed to apply color half holiday.\n", err)
+	}
+}
+
+func paintBirthday(file *excelize.File, sheetName string, startCell, endCell string) {
+	style, err := file.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			Horizontal: "center",
+			Vertical:   "center",
+			WrapText:   true,
+		},
+		Fill: excelize.Fill{
+			Type:    "pattern",
+			Color:   []string{"#C3FCF1"},
+			Pattern: 1},
+		Border: []excelize.Border{
+			{
+				Type:  "top",
+				Color: "#000000",
+				Style: 1,
+			},
+			{
+				Type:  "right",
+				Color: "#000000",
+				Style: 1,
+			},
+			{
+				Type:  "bottom",
+				Color: "#000000",
+				Style: 1,
+			},
+			{
+				Type:  "left",
+				Color: "#000000",
+				Style: 1,
+			},
+		},
+	})
+	if err != nil {
+		ErrorLogger.Println("Failed to create new style.2\n", err)
+	}
+
+	if err := file.SetCellStyle(sheetName, startCell, endCell, style); err != nil {
+		WarningLogger.Println("Failed to apply color half birthday\n", err)
 	}
 }

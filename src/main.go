@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -86,6 +87,7 @@ func init() {
 	year, month, day := now.Date()
 	dir := filepath.Dir(os.Args[1])
 	filename := fmt.Sprintf("log-%v-%v-%v_%v:%v:%v.txt", year, month, day, hour, min, sec)
+
 	// Create logs directory
 	if err := os.Mkdir(filepath.Join(dir, "logs"), os.ModePerm); err != nil {
 		log.Println(err)
@@ -110,9 +112,7 @@ func main() {
 	daysInMonth := daysIn(month, year)
 	daysOfWeek := [7]string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
 
-	/*
-		SCAN EMPLOYEE DATABASE SHEET
-	*/
+	/* SCAN EMPLOYEE DATABASE SHEET */
 
 	// Import file
 	filePath := os.Args[1]
@@ -133,9 +133,7 @@ func main() {
 		ErrorLogger.Fatal("Can't get sheet contents. ", err)
 	}
 
-	/*
-		CREATE EMPLOYEES COLLECTION
-	*/
+	/* CREATE EMPLOYEES COLLECTION */
 
 	var (
 		employees []employee
@@ -187,9 +185,7 @@ func main() {
 		InfoLogger.Printf("Added %v to collection %+v", e.Name, e)
 	}
 
-	/*
-		FILL SPREADSHEET WITH CALENDAR DAYS, EMPLOYEES AND SCHEDULE
-	*/
+	/* FILL SPREADSHEET WITH CALENDAR DAYS, EMPLOYEES AND SCHEDULE */
 
 	var (
 		sheetName    = fmt.Sprintf("%v %v", month, year)
@@ -239,9 +235,8 @@ func main() {
 		ErrorLogger.Fatal("Setting sheet row %v failed", cellWDS, err)
 	}
 
-	/*
-		SET ROWS WITH EMPLOYEES
-	*/
+	/* SET ROWS WITH EMPLOYEES */
+
 	applyGeneralStyles(f, sheetName, daysInMonth, employees)
 
 	//Fetch weekends and holidays from isdayoff API
@@ -256,19 +251,15 @@ func main() {
 	dataString := string(data)
 
 	cursor := 7
-	for _, e := range employees {
+	for i, e := range employees {
 		worktimeRow := []string{e.Job, e.Name}
 		totalHoursRow := []any{}
 		var totalHours time.Duration
 
-		for i, ch := range dataString {
-			date := buildDate(year, month, i+1)
+		for j, ch := range dataString {
+			date := buildDate(year, month, j+1)
 			wd := int(date.Weekday())
-
-			if wd == 6 || wd == 0 {
-				st, ec := buildCoordinates(i+3, 5, i+3, 6+len(employees)*2)
-				paintWeekend(f, sheetName, st, ec)
-			}
+			weekend := toInt(strings.Split(e.Weekend, ""))
 
 			switch string(ch) {
 			case "0", "4":
@@ -277,33 +268,91 @@ func main() {
 				cellValue := fmt.Sprintf("%v-%v", start, end)
 
 				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
-					cellValue += ", ДР" // paint bday
+					cellValue += ", ДР"
+					x, y := buildCoordinates(j+3, 7+i*2, j+3, 7+i*2)
+					paintBirthday(f, sheetName, x, y)
 				}
-				worktimeRow = append(worktimeRow, cellValue)
-				workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
-				totalHoursRow = append(totalHoursRow, workDuration.Hours())
-				totalHours += workDuration
+
+				isWeekend := false
+				for _, v := range weekend {
+					if weekDaysMap[j+1] == v {
+						isWeekend = true
+					}
+				}
+				if isWeekend == true {
+					worktimeRow = append(worktimeRow, "B")
+					totalHoursRow = append(totalHoursRow, "в")
+				} else {
+					worktimeRow = append(worktimeRow, cellValue)
+					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
+					totalHoursRow = append(totalHoursRow, workDuration.Hours())
+					totalHours += workDuration
+				}
 
 			case "1":
-				cellValue := "B"
-				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
-					cellValue += ", ДР" // paint bday
+				var cellValue string
+				if wd == 6 || wd == 0 {
+					start := e.StartTime.Format("15:04")
+					end := e.EndTime.Format("15:04")
+					cellValue = fmt.Sprintf("%v-%v", start, end)
+					st, ec := buildCoordinates(j+3, 5, j+3, 6+len(employees)*2)
+					paintWeekend(f, sheetName, st, ec)
+				} else {
+					cellValue = "ПРАЗДНИК"
+					x, y := buildCoordinates(j+3, 5, j+3, 6+len(employees)*2)
+					paintHoliday(f, sheetName, x, y)
 				}
-				worktimeRow = append(worktimeRow, cellValue)
-				totalHoursRow = append(totalHoursRow, "в")
+				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
+					cellValue += ", ДР"
+					x, y := buildCoordinates(j+3, 7+i*2, j+3, 7+i*2)
+					paintBirthday(f, sheetName, x, y)
+				}
+
+				isWeekend := false
+				for _, v := range weekend {
+					if weekDaysMap[j+1] == v {
+						isWeekend = true
+					}
+				}
+				if isWeekend == true {
+					worktimeRow = append(worktimeRow, "B")
+					totalHoursRow = append(totalHoursRow, "в")
+				} else {
+					worktimeRow = append(worktimeRow, cellValue)
+					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
+					totalHoursRow = append(totalHoursRow, workDuration.Hours())
+					totalHours += workDuration
+				}
 
 			case "2":
 				start := e.StartTime.Format("15:04")
 				end := e.EndTime.Format("15:04")
 				cellValue := fmt.Sprintf("%v-%v%v", start, end, ", СОКР")
 
+				x, y := buildCoordinates(j+3, 5, j+3, 6+len(employees)*2)
+				paintHalfDay(f, sheetName, x, y)
+
 				if e.Birthday.Month() == date.Month() && e.Birthday.Day() == date.Day() {
-					cellValue += ", ДР" // paint bday
+					cellValue += ", ДР"
+					x, y := buildCoordinates(j+3, 7+i*2, j+3, 7+i*2)
+					paintBirthday(f, sheetName, x, y)
 				}
-				worktimeRow = append(worktimeRow, cellValue)
-				workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*2 // lunch
-				totalHoursRow = append(totalHoursRow, workDuration.Hours())
-				totalHours += workDuration
+
+				isWeekend := false
+				for _, v := range weekend {
+					if weekDaysMap[j+1] == v {
+						isWeekend = true
+					}
+				}
+				if isWeekend == true {
+					worktimeRow = append(worktimeRow, "B")
+					totalHoursRow = append(totalHoursRow, "в")
+				} else {
+					worktimeRow = append(worktimeRow, cellValue)
+					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*2 // lunch
+					totalHoursRow = append(totalHoursRow, workDuration.Hours())
+					totalHours += workDuration
+				}
 			}
 		}
 
