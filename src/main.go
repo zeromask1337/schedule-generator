@@ -317,6 +317,9 @@ func main() {
 				if isWeekend == true {
 					worktimeRow = append(worktimeRow, "B")
 					totalHoursRow = append(totalHoursRow, "в")
+				} else if cellValue == "ПРАЗДНИК" || cellValue == "ПРАЗДНИК, ДР" {
+					worktimeRow = append(worktimeRow, cellValue)
+					totalHoursRow = append(totalHoursRow, "в")
 				} else {
 					worktimeRow = append(worktimeRow, cellValue)
 					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
