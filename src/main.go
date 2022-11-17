@@ -254,7 +254,6 @@ func main() {
 	for i, e := range employees {
 		worktimeRow := []string{e.Job, e.Name}
 		totalHoursRow := []any{}
-		var totalHours time.Duration
 
 		for j, ch := range dataString {
 			date := buildDate(year, month, j+1)
@@ -286,7 +285,6 @@ func main() {
 					worktimeRow = append(worktimeRow, cellValue)
 					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
 					totalHoursRow = append(totalHoursRow, workDuration.Hours())
-					totalHours += workDuration
 				}
 
 			case "1":
@@ -324,7 +322,6 @@ func main() {
 					worktimeRow = append(worktimeRow, cellValue)
 					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*1 // lunch
 					totalHoursRow = append(totalHoursRow, workDuration.Hours())
-					totalHours += workDuration
 				}
 
 			case "2":
@@ -354,18 +351,28 @@ func main() {
 					worktimeRow = append(worktimeRow, cellValue)
 					workDuration := e.EndTime.Sub(e.StartTime) - time.Hour*2 // lunch
 					totalHoursRow = append(totalHoursRow, workDuration.Hours())
-					totalHours += workDuration
 				}
 			}
 		}
 
 		// Inserting and merging rows
-		totalHoursRow = append(totalHoursRow, "", totalHours.String())
+		totalHoursRow = append(totalHoursRow, "")
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("A%v", cursor), &worktimeRow); err != nil {
 			ErrorLogger.Fatal("Inserting worktimeRow on A failed. ", err)
 		}
 		if err := f.SetSheetRow(sheetName, fmt.Sprintf("C%v", cursor+1), &totalHoursRow); err != nil {
 			ErrorLogger.Fatal("Inserting totalhoursRow on C failed. ", err)
+		}
+
+		formulaXY, err := excelize.CoordinatesToCellName(2+len(weekDaySlice)+2, cursor+1)
+		if err != nil {
+			WarningLogger.Println("Failed to convert coordinates to cellname.\n", err)
+		}
+		frX, _ := excelize.CoordinatesToCellName(3, cursor+1)
+		frY, _ := excelize.CoordinatesToCellName(2+len(weekDaySlice), cursor+1)
+		formulaRange := fmt.Sprintf("=SUM(%v:%v)", frX, frY)
+		if err := f.SetCellFormula(sheetName, formulaXY, formulaRange); err != nil {
+			WarningLogger.Println("Failed to insert cell formula.\n", err)
 		}
 		if err := f.MergeCell(sheetName, fmt.Sprintf("A%v", cursor), fmt.Sprintf("A%v", cursor+1)); err != nil {
 			ErrorLogger.Fatal("Merging cell A failed. ", err)
