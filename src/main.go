@@ -31,49 +31,6 @@ type employee struct {
 	Weekend     string
 }
 
-// getKeys returns map keys
-func getKeys(m map[int]int) (keys []int) {
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-// toInt returns int slice
-func toInt(s []string) (slice []int) {
-	for _, elem := range s {
-		if convertedStr, err := strconv.Atoi(elem); err != nil {
-			log.Printf("toInt Error %v: %v", elem, err)
-		} else {
-			slice = append(slice, convertedStr)
-		}
-	}
-	return slice
-}
-
-// buildDate returns Time type using only year, month and day
-func buildDate(year int, month time.Month, day int) time.Time {
-	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-}
-
-// daysIn returns number of days in specified month
-func daysIn(m time.Month, year int) int {
-	return buildDate(year, m+1, 0).Day()
-}
-
-// buildCoordinates returns x and y of input coordinates
-func buildCoordinates(collX int, rowX int, colY int, rowY int) (startCell string, endCell string) {
-	st, err := excelize.CoordinatesToCellName(collX, rowX)
-	if err != nil {
-		ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
-	}
-	ec, err := excelize.CoordinatesToCellName(colY, rowY)
-	if err != nil {
-		ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
-	}
-	return st, ec
-}
-
 func init() {
 	// Check if args are empty
 	if len(os.Args) > 1 {
@@ -382,4 +339,47 @@ func main() {
 		}
 		cursor += 2
 	}
+}
+
+// getKeys returns map keys
+func getKeys(m map[int]int) (keys []int) {
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// toInt returns int slice
+func toInt(s []string) (slice []int) {
+	for _, elem := range s {
+		if convertedStr, err := strconv.Atoi(elem); err != nil {
+			log.Printf("toInt Error %v: %v", elem, err)
+		} else {
+			slice = append(slice, convertedStr)
+		}
+	}
+	return slice
+}
+
+// buildDate returns Time type using only year, month and day
+func buildDate(year int, month time.Month, day int) time.Time {
+	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+}
+
+// daysIn returns number of days in specified month
+func daysIn(m time.Month, year int) int {
+	return buildDate(year, m+1, 0).Day()
+}
+
+// buildCoordinates returns x and y of input coordinates
+func buildCoordinates(collX int, rowX int, colY int, rowY int) (startCell string, endCell string) {
+	st, err := excelize.CoordinatesToCellName(collX, rowX)
+	if err != nil {
+		ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
+	}
+	ec, err := excelize.CoordinatesToCellName(colY, rowY)
+	if err != nil {
+		ErrorLogger.Println("Failed to make cellname from coordinates.\n", err)
+	}
+	return st, ec
 }
