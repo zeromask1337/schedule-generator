@@ -19,6 +19,7 @@ var (
 	InfoLogger    *log.Logger
 	WarningLogger *log.Logger
 	ErrorLogger   *log.Logger
+	dateOffset    int
 )
 
 type employee struct {
@@ -37,6 +38,16 @@ func init() {
 		fmt.Printf("FILEPATH: %v\n", os.Args[1])
 	} else {
 		log.Fatal("Error: no file path argument.\n")
+	}
+
+	// Check if there is third parameter
+	if len(os.Args) > 2 {
+		var err error
+		dateOffset, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Println("Wrong date offset format.\n", err)
+			ErrorLogger.Fatal("Wrong date offset format.\n", err)
+		}
 	}
 
 	now := time.Now()
@@ -63,7 +74,7 @@ func init() {
 }
 
 func main() {
-	desiredTime := time.Now().AddDate(0, 1, 0)
+	desiredTime := time.Now().AddDate(0, dateOffset, 0)
 	nextMonth := buildDate(desiredTime.Year(), desiredTime.Month(), 1)
 	year, month, _ := nextMonth.Date()
 	daysInMonth := daysIn(month, year)
