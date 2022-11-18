@@ -58,7 +58,7 @@ func init() {
 
 	// Create logs directory
 	if err := os.Mkdir(filepath.Join(dir, "logs"), os.ModePerm); err != nil {
-		log.Println(err)
+		log.Println("Failed to create logs directory.\n", err)
 	}
 
 	// Write logs file
